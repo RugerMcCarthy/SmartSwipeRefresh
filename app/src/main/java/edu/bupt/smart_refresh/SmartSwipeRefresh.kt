@@ -6,6 +6,7 @@ import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.MutatorMutex
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material.CircularProgressIndicator
@@ -13,10 +14,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.flow.Flow
@@ -79,6 +82,7 @@ private class SmartSwipeRefreshNestedScrollConnection(
     }
 
     override suspend fun onPreFling(available: Velocity): Velocity {
+        Log.d("gzz", "onPreFling")
         if (state.indicatorOffset > height / 2) {
             state.animateToOffset(height)
             state.isRefreshing = true
@@ -131,14 +135,17 @@ fun SmartSwipeRefresh(
         val smartSwipeRefreshNestedScrollConnection = remember(state, height) {
             SmartSwipeRefreshNestedScrollConnection(state, height)
         }
-        Column(
+        Box(
             Modifier
-                .nestedScroll(smartSwipeRefreshNestedScrollConnection)
-                .offset(y = -height + state.indicatorOffset),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .nestedScroll(smartSwipeRefreshNestedScrollConnection),
+            contentAlignment = Alignment.TopCenter
         ) {
-            loadingIndicator()
-            content()
+            Box(Modifier.offset(y = -height + state.indicatorOffset)) {
+                loadingIndicator()
+            }
+            Box(Modifier.offset(y = state.indicatorOffset)) {
+                content()
+            }
         }
         var density = LocalDensity.current
         LaunchedEffect(Unit) {

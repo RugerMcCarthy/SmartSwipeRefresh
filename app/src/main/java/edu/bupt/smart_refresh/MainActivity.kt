@@ -5,10 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.Card
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
@@ -47,14 +44,21 @@ fun SmartSwipeRefreshDemo() {
         )
     }
     Box(modifier = Modifier.fillMaxSize()) {
-        SmartSwipeRefresh(onRefresh = {
-            delay(2000)
-            if (sentences.size == 4) {
-                sentences.add(0, "骂谁罕见，骂谁罕见")
-                sentences.add(0, "真的绝绝子，好喝到翘jiojio")
-                sentences.add(0, "乃琳你带我走吧")
+        SmartSwipeRefresh(
+            onRefresh = {
+                delay(2000)
+                if (sentences.size == 4) {
+                    sentences.add(0, "骂谁罕见，骂谁罕见")
+                    sentences.add(0, "真的绝绝子，好喝到翘jiojio")
+                    sentences.add(0, "乃琳你带我走吧")
+                }
+            },
+            loadingIndicator = {
+                Box(modifier = Modifier.padding(10.dp)) {
+                    CircularProgressIndicator(Modifier.size(200.dp))
+                }
             }
-        }) {
+        ) {
             LazyColumn(Modifier.fillMaxSize()) {
                 items(sentences.size) {
                     val currentSentence = sentences[it]
