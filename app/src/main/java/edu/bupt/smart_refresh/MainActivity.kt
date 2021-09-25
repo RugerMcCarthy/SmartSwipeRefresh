@@ -48,7 +48,7 @@ fun SmartSwipeRefreshDemo() {
     }
     Box(modifier = Modifier.fillMaxSize()) {
         SmartSwipeRefresh(onRefresh = {
-            delay(3000)
+            delay(2000)
             if (sentences.size == 4) {
                 sentences.add(0, "骂谁罕见，骂谁罕见")
                 sentences.add(0, "真的绝绝子，好喝到翘jiojio")

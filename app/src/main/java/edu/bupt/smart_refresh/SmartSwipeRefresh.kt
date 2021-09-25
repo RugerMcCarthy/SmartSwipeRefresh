@@ -16,6 +16,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.flow.Flow
@@ -49,7 +50,7 @@ class SmartSwipeRefreshState {
     }
 }
 
-class SmartSwipeRefreshNestedScrollConnection(
+private class SmartSwipeRefreshNestedScrollConnection(
     val state: SmartSwipeRefreshState
 ): NestedScrollConnection {
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -93,25 +94,51 @@ class SmartSwipeRefreshNestedScrollConnection(
 }
 
 @Composable
+private fun SubcomposeSmartSwipeRefresh(
+    indicator: @Composable () -> Unit,
+    content: @Composable (Dp) -> Unit
+) {
+    SubcomposeLayout { constraints: Constraints ->
+        var indicatorPlaceable = subcompose("indicator", indicator).first().measure(constraints)
+        var contentPlaceable = subcompose("content") {
+            content(indicatorPlaceable.height.toDp())
+        }.map {
+            it.measure(constraints)
+        }.first()
+        Log.d("gzz","dp: ${indicatorPlaceable.height.toDp()}")
+        layout(contentPlaceable.width, contentPlaceable.height) {
+            contentPlaceable.placeRelative(0, 0)
+        }
+    }
+}
+
+/**
+ * A smart refresh component can customize your slide refresh animation component.
+ * @param onRefresh: Refreshing behavior of data when sliding down.
+ * @param state: The state contains some refresh state info.
+ * @param loadingIndicator: Specify the refresh animation component.
+ * @param content: Some slidable components need to be included here.
+ */
+@Composable
 fun SmartSwipeRefresh(
     onRefresh: suspend () -> Unit,
-    state:SmartSwipeRefreshState = remember {
-        SmartSwipeRefreshState()
-    },
+    state: SmartSwipeRefreshState = remember { SmartSwipeRefreshState() },
+    loadingIndicator: @Composable () -> Unit = { CircularProgressIndicator() },
     content: @Composable () -> Unit
 ) {
     val smartSwipeRefreshNestedScrollConnection = remember(state) {
         SmartSwipeRefreshNestedScrollConnection(state)
     }
-
-    Column(
-        Modifier
-            .nestedScroll(smartSwipeRefreshNestedScrollConnection)
-            .offset(y = (-40).dp + state.indicatorOffset),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        CircularProgressIndicator()
-        content()
+    SubcomposeSmartSwipeRefresh(indicator = loadingIndicator) {
+        Column(
+            Modifier
+                .nestedScroll(smartSwipeRefreshNestedScrollConnection)
+                .offset(y = -it + state.indicatorOffset),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            loadingIndicator()
+            content()
+        }
     }
 
     var density = LocalDensity.current
