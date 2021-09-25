@@ -51,7 +51,8 @@ class SmartSwipeRefreshState {
 }
 
 private class SmartSwipeRefreshNestedScrollConnection(
-    val state: SmartSwipeRefreshState
+    val state: SmartSwipeRefreshState,
+    val height: Dp
 ): NestedScrollConnection {
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
         Log.d("gzz", "onPreScroll")
@@ -78,8 +79,8 @@ private class SmartSwipeRefreshNestedScrollConnection(
     }
 
     override suspend fun onPreFling(available: Velocity): Velocity {
-        if (state.indicatorOffset > 30.dp) {
-            state.animateToOffset(60.dp)
+        if (state.indicatorOffset > height / 2) {
+            state.animateToOffset(height)
             state.isRefreshing = true
         } else {
             state.animateToOffset(0.dp)
@@ -126,34 +127,32 @@ fun SmartSwipeRefresh(
     loadingIndicator: @Composable () -> Unit = { CircularProgressIndicator() },
     content: @Composable () -> Unit
 ) {
-    val smartSwipeRefreshNestedScrollConnection = remember(state) {
-        SmartSwipeRefreshNestedScrollConnection(state)
-    }
-    SubcomposeSmartSwipeRefresh(indicator = loadingIndicator) {
+    SubcomposeSmartSwipeRefresh(indicator = loadingIndicator) { height ->
+        val smartSwipeRefreshNestedScrollConnection = remember(state, height) {
+            SmartSwipeRefreshNestedScrollConnection(state, height)
+        }
         Column(
             Modifier
                 .nestedScroll(smartSwipeRefreshNestedScrollConnection)
-                .offset(y = -it + state.indicatorOffset),
+                .offset(y = -height + state.indicatorOffset),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             loadingIndicator()
             content()
         }
-    }
-
-    var density = LocalDensity.current
-    LaunchedEffect(Unit) {
-        state.indicatorOffsetFlow.collect {
-            var currentOffset = with(density) { state.indicatorOffset + it.toDp() }
-            state.snapToOffset(currentOffset.coerceAtLeast(0.dp).coerceAtMost(60.dp))
+        var density = LocalDensity.current
+        LaunchedEffect(Unit) {
+            state.indicatorOffsetFlow.collect {
+                var currentOffset = with(density) { state.indicatorOffset + it.toDp() }
+                state.snapToOffset(currentOffset.coerceAtLeast(0.dp).coerceAtMost(height))
+            }
         }
-    }
-
-    LaunchedEffect(state.isRefreshing) {
-        if (state.isRefreshing) {
-            onRefresh()
-            state.animateToOffset(0.dp)
-            state.isRefreshing = false
+        LaunchedEffect(state.isRefreshing) {
+            if (state.isRefreshing) {
+                onRefresh()
+                state.animateToOffset(0.dp)
+                state.isRefreshing = false
+            }
         }
     }
 }
